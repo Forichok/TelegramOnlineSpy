@@ -9,23 +9,18 @@ import collections
 
 DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 API_HASH = 'your api hash'
-API_ID = 'yuor api id'
+API_ID = 'your api id'
+BOT_TOKEN = "your bot token"
+USER_NAME = "your user name"
 
-
-proxy_ip = 'russia.proxy.digitalresistance.dog'
-proxy_port = 443
-secret = 'd41d8cd98f00b204e9800998ecf8427e'
-proxy = (proxy_ip, proxy_port, secret)
-client = TelegramClient('data_thief', API_ID, API_HASH, connection=connection.ConnectionTcpMTProxyRandomizedIntermediate,
-    proxy=proxy)
+client = TelegramClient('data_thief', API_ID, API_HASH)
 
 client.connect()
 client.start()
-bot = TelegramClient('bot', API_ID, API_HASH, connection=connection.ConnectionTcpMTProxyRandomizedIntermediate,
-    proxy=proxy).start(bot_token='your bot token')
+bot = TelegramClient('bot', API_ID, API_HASH).start(bot_token=BOT_TOKEN)
 
 data = {}
-destination_user_username='forichok'
+destination_user_username=USER_NAME
 entity=bot.get_entity(destination_user_username)
 entity=client.get_entity(destination_user_username)
 
@@ -36,10 +31,15 @@ help_messages = ['/start - start online monitoring ',
          '/list - show added users',
          '/clear - clear user list',
          '/remove - remove user from list with position in list (to show use /list command)"/remove 1"',
-         '/setdelay - set delay between user check']
+         '/setdelay - set delay between user check in seconds',
+         '/logs - display command log',
+         '/clearlogs - clear the command log file',
+         '/cleardata - reset configuration',
+         '/disconnect - disconnect bot',
+         '/getall - status']
 
 
-print('done2')
+print('running')
 class Contact:
     online = None
     last_offline = None
@@ -135,6 +135,7 @@ async def start(event):
         print(f'running {id}: {counter}')
         counter+=1
         for contact in contacts:
+            print(contact)
             account = await client.get_entity(contact.id)
             if isinstance(account.status, UserStatusOffline):
                 if contact.online != False:
