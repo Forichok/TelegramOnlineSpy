@@ -1,7 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from sys import argv, exit
 from telethon import TelegramClient, events, connection
-from telethon.tl.types import UserStatusOnline, UserStatusOffline
+from telethon.tl.types import UserStatusRecently, UserStatusEmpty, UserStatusOnline, UserStatusOffline, PeerUser, PeerChat, PeerChannel
 from time import mktime, sleep
 import telethon.sync
 from threading import Thread
@@ -20,9 +20,6 @@ client.start()
 bot = TelegramClient('bot', API_ID, API_HASH).start(bot_token=BOT_TOKEN)
 
 data = {}
-destination_user_username=USER_NAME
-entity=bot.get_entity(destination_user_username)
-entity=client.get_entity(destination_user_username)
 
 help_messages = ['/start - start online monitoring ',
          '/stop - stop online monitoring ',
@@ -43,6 +40,7 @@ print('running')
 class Contact:
     online = None
     last_offline = None
+    last_online = None
     id = ''
     name = ''
 
@@ -70,7 +68,7 @@ async def clearLogs(event):
 async def clear(event):
     """Send a message when the command /start is issued."""
     message = event.message
-    id = message.from_id
+    id = message.chat_id
     data[id] = {}
     await event.respond('User list has been cleared')
 
@@ -82,7 +80,7 @@ async def help(event):
 async def log(event):
     """Send a message when the command /start is issued."""
     message = event.message
-    id = message.from_id
+    id = message.chat_id
     str = f'{datetime.now().strftime(DATETIME_FORMAT)}: [{id}]: {message.message}'
     printToFile(str)
     #await bot.send_message(entity=entity,message=str)
@@ -92,7 +90,7 @@ async def log(event):
 async def stop(event):
     """Send a message when the command /start is issued."""
     message = event.message
-    id = message.from_id
+    id = message.chat_id
     if id not in data:
         data[id] = {}
     user_data = data[id]
@@ -107,7 +105,7 @@ async def clearData(event):
 @bot.on(events.NewMessage(pattern='^/start$'))
 async def start(event):
     message = event.message
-    id = message.from_id
+    id = message.chat_id
     if id not in data:
         data[id] = {}
     user_data = data[id]
@@ -137,29 +135,46 @@ async def start(event):
         for contact in contacts:
             print(contact)
             account = await client.get_entity(contact.id)
-            if isinstance(account.status, UserStatusOffline):
-                if contact.online != False:
-                    contact.online = False
-                    await event.respond(f'{utc2localtime(account.status.was_online).strftime(DATETIME_FORMAT)}: {contact.name} went offline.')
-                elif contact.last_offline != account.status.was_online:
-                    if contact.last_offline is not None:
-                        await event.respond(f'{utc2localtime(account.status.was_online).strftime(DATETIME_FORMAT)}: {contact.name} went offline after being online for short time.')
-                    else:
-                        await event.respond(f'{utc2localtime(account.status.was_online).strftime(DATETIME_FORMAT)}: {contact.name} went offline.')
-                contact.last_offline = account.status.was_online
-            elif isinstance(account.status, UserStatusOnline):
-                if contact.online != True:
-                    contact.online = True
-                    await event.respond(f'{datetime.now().strftime(DATETIME_FORMAT)}: {contact.name} went online.')
-            else:
-                if contact.online != False:
-                    contact.online = False
-                    await event.respond(f'{datetime.now().strftime(DATETIME_FORMAT)}: {contact.name} went offline.')
+
+        if isinstance(account.status, UserStatusOnline):
+            if contact.online != True:
+                contact.online = True
+                contact.last_offline = datetime.now()
+                was_offline='unknown offline time'
+                if contact.last_online is not None:
+                    time
+                    was_offline = (contact.last_offline - contact.las_online).strftime(DATETIME_FORMAT)
+                await event.respond(f'{get_interval(was_offline)}: {contact.name} went online.')
+        elif isinstance(account.status, UserStatusOffline):
+            if contact.online == True:
+                contact.online = False
+                last_time_online = utc2localtime(account.status.was_online)
+                if (last_time_online is None):
+                    last_time_online = datetime.now()
+                contact.last_online = account.status.was_online
+
+                was_online='unknown online time'
+                if contact.last_offline is not None:
+                    was_online = (contact.last_online - contact.last_offline).strftime(DATETIME_FORMAT)
+
+                await event.respond(f'{get_interval(was_online)} {contact.name} went offline.')
+            contact.last_offline = None
+        else:
+            if contact.online == True:
+                contact.online = False
+                contact.last_online = datetime.now()
+
+                was_online='unknown online time'
+                if contact.last_offline is not None:
+                    was_online = (contact.last_online - contact.las_offline).strftime(DATETIME_FORMAT)
+
+                await event.respond(f'{get_interval(was_online)}: {contact.name} went offline.')
                 contact.last_offline = None
         delay = 3
         if('delay' in user_data):
             delay = user_data['delay']
         sleep(delay)
+    user_data['is_running'] = False
     await event.respond(f'Spy gonna zzzzzz...')
 
 @bot.on(events.NewMessage(pattern='^/add'))
@@ -169,7 +184,7 @@ async def add(event):
     print(person_info)
     phone = person_info[1]
     name = person_info[2]
-    id = message.from_id
+    id = message.chat_id
     if id not in data:
         data[id] = {}
     user_data = data[id]
@@ -188,7 +203,7 @@ async def remove(event):
     person_info = message.message.split()
     print(person_info)
     index = int(person_info[1])
-    id = message.from_id
+    id = message.chat_id
     if id not in data:
         data[id] = {}
     user_data = data[id]
@@ -209,7 +224,7 @@ async def setDelay(event):
     person_info = message.message.split()
     print(person_info)
     index = int(person_info[1])
-    id = message.from_id
+    id = message.chat_id
     if id not in data:
         data[id] = {}
     user_data = data[id]
@@ -229,7 +244,7 @@ async def disconnect(event):
 @bot.on(events.NewMessage(pattern='/list'))
 async def list(event):
     message = event.message
-    id = message.from_id
+    id = message.chat_id
     if id not in data:
         data[id] = {}
     user_data = data[id]
@@ -270,6 +285,14 @@ def printToFile(str):
     with open(file_name,'a') as f:
         print(str)
         f.write(str + '\n')
+
+def get_interval(date):
+    d = divmod(date.total_seconds(),86400)  # days
+    h = divmod(d[1],3600)  # hours
+    m = divmod(h[1],60)  # minutes
+    s = m[1]  # seconds
+
+    return '%dh:%dm:%ds' % (h[0],m[0],s)
 
 if __name__ == '__main__':
     main()
