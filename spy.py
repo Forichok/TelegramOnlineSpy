@@ -142,8 +142,7 @@ async def start(event):
                 contact.last_offline = datetime.now()
                 was_offline='unknown offline time'
                 if contact.last_online is not None:
-                    time
-                    was_offline = (contact.last_offline - contact.las_online).strftime(DATETIME_FORMAT)
+                    was_offline = (contact.last_offline - contact.last_online).strftime(DATETIME_FORMAT)
                 await event.respond(f'{get_interval(was_offline)}: {contact.name} went online.')
         elif isinstance(account.status, UserStatusOffline):
             if contact.online == True:
@@ -170,7 +169,7 @@ async def start(event):
 
                 await event.respond(f'{get_interval(was_online)}: {contact.name} went offline.')
                 contact.last_offline = None
-        delay = 3
+        delay = 5
         if('delay' in user_data):
             delay = user_data['delay']
         sleep(delay)
