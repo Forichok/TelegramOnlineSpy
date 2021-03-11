@@ -5,7 +5,11 @@ from telethon.tl.types import UserStatusRecently, UserStatusEmpty, UserStatusOnl
 from time import mktime, sleep
 import telethon.sync
 from threading import Thread
-import collections
+
+try:
+    from collections.abc import Sequence
+except ImportError:
+    from collections import Sequence
 
 DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 API_HASH = 'your api hash'
@@ -262,7 +266,7 @@ async def getAll(event):
     for key, value in data.items():
         response += f'{key}:\n'
         for j, i in value.items():
-            if (isinstance(i, collections.Sequence)):
+            if (isinstance(i, Sequence)):
                 response += f'{j}: ' + '\n'.join([str(x) for x in i]) + '\n'
             else:
                 response += f'{j}: {i}\n'
