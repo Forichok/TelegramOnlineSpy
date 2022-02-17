@@ -13,7 +13,7 @@ API_ID = 'your api id'
 BOT_TOKEN = "your bot token"
 USER_NAME = "your user name"
 
-client = TelegramClient('data_thief', API_ID, API_HASH)
+client = TelegramClient(USER_NAME, API_ID, API_HASH)
 
 client.connect()
 client.start()
